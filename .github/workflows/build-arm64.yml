@@ -1,11 +1,7 @@
-name: Build Windows ARM64
+name: Build Electron Windows ARM64
 
 on:
-  push:
-    branches: [ "main", "master" ]  # 当你向这些分支推送代码时触发
-  pull_request:
-    branches: [ "main", "master" ]
-  workflow_dispatch:              # 允许你在 GitHub 页面上点击按钮手动触发（最推荐）
+  workflow_dispatch: # 允许手动点击按钮触发
 
 jobs:
   build:
@@ -14,23 +10,29 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          submodules: recursive # 如果仓库包含子模块，这一行很重要
+          node-version: 18 # 或者项目要求的版本
+          cache: 'yarn'
 
-      - name: Add MSBuild to PATH
-        uses: microsoft/setup-msbuild@v2
+      - name: Install dependencies
+        run: yarn install
 
-      - name: Configure CMake
-        # -A ARM64 是关键，它告诉编译器目标平台是 ARM64
-        run: cmake -B build -A ARM64
+      - name: Create .env file
+        # 模拟你的 cp .env.example .env 指令
+        run: copy .env.example .env
 
-      - name: Build
-        run: cmake --build build --config Release
+      - name: Build Windows ARM64
+        # 假设你的 package.json 中有 build 脚本。
+        # 如果没有，可以直接运行 node_modules/.bin/electron-builder --win --arm64
+        run: yarn electron-builder --win --arm64 
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Build Artifacts
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-arm64-binary
-          path: |
-            build/Release/*.exe
-            build/Release/*.dll
+          name: Electron-Win-ARM64
+          path: dist/*.exe # 根据你项目实际生成目录调整（通常是 dist 或 out）
