@@ -1,14 +1,36 @@
+name: Build Windows ARM64
+
+on:
+  push:
+    branches: [ "main", "master" ]  # 当你向这些分支推送代码时触发
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:              # 允许你在 GitHub 页面上点击按钮手动触发（最推荐）
+
 jobs:
   build:
     runs-on: windows-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive # 如果仓库包含子模块，这一行很重要
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
       - name: Configure CMake
+        # -A ARM64 是关键，它告诉编译器目标平台是 ARM64
         run: cmake -B build -A ARM64
+
       - name: Build
         run: cmake --build build --config Release
-      - name: Upload Artifact
+
+      - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: windows-arm64-binaries
-          path: build/Release/ # 这里的路径根据实际输出调整
+          name: windows-arm64-binary
+          path: |
+            build/Release/*.exe
+            build/Release/*.dll
