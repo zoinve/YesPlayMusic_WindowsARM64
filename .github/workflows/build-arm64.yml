@@ -23,7 +23,10 @@ jobs:
         with:
           node-version: 16
           cache: 'yarn'
-
+# --- 关键新增步骤：解决 LNK1181 缺失 node.lib 的问题 ---
+      - name: Pre-install ARM64 Node headers
+        run: npx node-gyp install 16.20.2 --arch=arm64
+      # ---------------------------------------------------
       - name: Fix package.json dependencies
         run: |
           node -e "let p=require('./package.json'); ['electron', 'electron-builder'].forEach(k=>{if(p.dependencies && p.dependencies[k]){p.devDependencies=p.devDependencies||{}; p.devDependencies[k]=p.dependencies[k]; delete p.dependencies[k]}}); require('fs').writeFileSync('./package.json', JSON.stringify(p, null, 2))"
