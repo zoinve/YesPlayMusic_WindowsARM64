@@ -16,7 +16,13 @@ jobs:
         with:
           node-version: 16 # 或者项目要求的版本
           cache: 'yarn'
-
+      # --- 新增步骤开始 ---
+      - name: Fix package.json dependencies
+        run: |
+          node -e "let p=require('./package.json'); ['electron', 'electron-builder'].forEach(k=>{if(p.dependencies && p.dependencies[k]){p.devDependencies=p.devDependencies||{}; p.devDependencies[k]=p.dependencies[k]; delete p.dependencies[k]}}); require('fs').writeFileSync('./package.json', JSON.stringify(p, null, 2))"
+      # --- 新增步骤结束 ---
+      - name: Install dependencies
+        run: yarn install --ignore-engines
       - name: Install dependencies
         run: yarn install
 
