@@ -1,49 +1,58 @@
-name: Build Electron Windows ARM64
+name: Build YesPlayMusic Windows ARM64
 
 on:
-  workflow_dispatch: # 允许手动点击按钮触发
+  workflow_dispatch: # 手动触发
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive # 确保子模块也被拉取
+
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 16 # 或者项目要求的版本
+          node-version: 16
           cache: 'yarn'
-      # --- 新增步骤开始 ---
+
       - name: Fix package.json dependencies
         run: |
           node -e "let p=require('./package.json'); ['electron', 'electron-builder'].forEach(k=>{if(p.dependencies && p.dependencies[k]){p.devDependencies=p.devDependencies||{}; p.devDependencies[k]=p.dependencies[k]; delete p.dependencies[k]}}); require('fs').writeFileSync('./package.json', JSON.stringify(p, null, 2))"
-      # --- 新增步骤结束 ---
+
       - name: Install dependencies
         run: yarn install --ignore-engines
-      - name: Install dependencies
-        run: yarn install
+        env:
+          npm_config_arch: arm64 # 告诉 yarn 我们要为 ARM64 准备依赖
 
       - name: Create .env file
-        # 模拟你的 cp .env.example .env 指令
-        run: copy .env.example .env
+        run: |
+          if (Test-Path .env.example) { copy .env.example .env }
+          # 如果你的项目需要特定的 key，可以在这里通过 echo 写入
+
+      - name: Build Web Code
+        run: yarn run build
 
       - name: Build Windows ARM64
-        # 假设你的 package.json 中有 build 脚本。
-        # 如果没有，可以直接运行 node_modules/.bin/electron-builder --win --arm64
-        run: yarn electron-builder --win --arm64 
+        # 使用 electron:build 是为了触发项目内置的打包逻辑
+        run: yarn run electron:build --win --arm64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          npm_config_arch: arm64
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Electron-Win-ARM64
-          path: dist/*.exe # 根据你项目实际生成目录调整（通常是 dist 或 out）
+          name: YesPlayMusic-Win-ARM64
+          # 同时搜索 dist 和 dist_electron，确保能抓取到生成的 exe
+          path: |
+            dist/*.exe
+            dist_electron/*.exe
