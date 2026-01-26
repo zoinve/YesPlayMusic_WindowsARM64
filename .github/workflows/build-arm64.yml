@@ -1,7 +1,7 @@
 name: Build YesPlayMusic Windows ARM64
 
 on:
-  workflow_dispatch: # 手动触发
+  workflow_dispatch:
 
 jobs:
   build:
@@ -11,7 +11,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          submodules: recursive # 确保子模块也被拉取
+          submodules: recursive
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
@@ -21,41 +21,45 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20 # 升级到 20 以获得完善的 ARM64 交叉编译工具支持
           cache: 'yarn'
-# --- 关键新增步骤：解决 LNK1181 缺失 node.lib 的问题 ---
-      - name: Pre-install ARM64 Node headers
-        run: npx node-gyp install 16.20.2 --arch=arm64
-      # ---------------------------------------------------
+
       - name: Fix package.json dependencies
         run: |
           node -e "let p=require('./package.json'); ['electron', 'electron-builder'].forEach(k=>{if(p.dependencies && p.dependencies[k]){p.devDependencies=p.devDependencies||{}; p.devDependencies[k]=p.dependencies[k]; delete p.dependencies[k]}}); require('fs').writeFileSync('./package.json', JSON.stringify(p, null, 2))"
 
       - name: Install dependencies
+        # 这里是核心：强制指向 Electron 的 ARM64 库文件
         run: yarn install --ignore-engines
         env:
-          npm_config_arch: arm64 # 告诉 yarn 我们要为 ARM64 准备依赖
+          npm_config_arch: arm64
+          npm_config_target_arch: arm64
+          npm_config_target: 13.6.9
+          npm_config_disturl: https://electronjs.org/headers
+          npm_config_runtime: electron
+          npm_config_msvs_version: 2022
 
       - name: Create .env file
         run: |
           if (Test-Path .env.example) { copy .env.example .env }
-          # 如果你的项目需要特定的 key，可以在这里通过 echo 写入
 
       - name: Build Web Code
         run: yarn run build
 
       - name: Build Windows ARM64
-        # 使用 electron:build 是为了触发项目内置的打包逻辑
         run: yarn run electron:build --win --arm64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           npm_config_arch: arm64
+          # 再次确保打包时也使用这些参数
+          npm_config_target: 13.6.9
+          npm_config_disturl: https://electronjs.org/headers
+          npm_config_runtime: electron
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: YesPlayMusic-Win-ARM64
-          # 同时搜索 dist 和 dist_electron，确保能抓取到生成的 exe
           path: |
             dist/*.exe
             dist_electron/*.exe
