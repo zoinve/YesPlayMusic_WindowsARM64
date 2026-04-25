@@ -21,8 +21,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20 # 升级到 20 以获得完善的 ARM64 交叉编译工具支持
+          node-version: 20
           cache: 'yarn'
+
+      - name: Ignore Yarn engine checks
+        run: yarn config set ignore-engines true
 
       - name: Fix package.json dependencies
         run: |
