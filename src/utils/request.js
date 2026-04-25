@@ -6,12 +6,13 @@ let baseURL = '';
 // Web 和 Electron 跑在不同端口避免同时启动时冲突
 if (process.env.IS_ELECTRON) {
   if (process.env.NODE_ENV === 'production') {
-    baseURL = process.env.VUE_APP_ELECTRON_API_URL;
+    baseURL = process.env.VUE_APP_ELECTRON_API_URL || '/api';
   } else {
-    baseURL = process.env.VUE_APP_ELECTRON_API_URL_DEV;
+    baseURL =
+      process.env.VUE_APP_ELECTRON_API_URL_DEV || 'http://127.0.0.1:10754';
   }
 } else {
-  baseURL = process.env.VUE_APP_NETEASE_API_URL;
+  baseURL = process.env.VUE_APP_NETEASE_API_URL || '/api';
 }
 
 const service = axios.create({
@@ -22,6 +23,12 @@ const service = axios.create({
 
 service.interceptors.request.use(function (config) {
   if (!config.params) config.params = {};
+  console.log('[request] start', {
+    baseURL,
+    url: config.url,
+    method: config.method,
+    params: config.params,
+  });
   if (baseURL.length) {
     if (
       baseURL[0] !== '/' &&
@@ -75,6 +82,15 @@ service.interceptors.response.use(
       data = response.data;
     }
 
+    console.error('[request] failed', {
+      baseURL,
+      url: error.config && error.config.url,
+      method: error.config && error.config.method,
+      status: response && response.status,
+      data,
+      message: error.message || error,
+    });
+
     if (
       response &&
       typeof data === 'object' &&
@@ -93,6 +109,8 @@ service.interceptors.response.use(
         router.push({ name: 'login' });
       }
     }
+
+    return Promise.reject(error);
   }
 );
 

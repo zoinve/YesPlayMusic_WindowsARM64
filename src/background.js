@@ -105,7 +105,9 @@ class Background {
     if (!app.requestSingleInstanceLock()) return app.quit();
 
     // start netease music api
-    this.neteaseMusicAPI = startNeteaseMusicApi();
+    this.neteaseMusicAPI = startNeteaseMusicApi().catch(error => {
+      console.error(`${clc.redBright('[NetEase API]')} failed`, error);
+    });
 
     // create Express app
     this.createExpressApp();
@@ -267,7 +269,12 @@ class Background {
   checkForUpdates() {
     if (isDevelopment) return;
     log('checkForUpdates');
-    autoUpdater.checkForUpdatesAndNotify();
+    autoUpdater.on('error', error => {
+      log(`autoUpdater error: ${error.message}`);
+    });
+    autoUpdater.checkForUpdatesAndNotify().catch(error => {
+      log(`autoUpdater check failed: ${error.message}`);
+    });
 
     const showNewVersionMessage = info => {
       dialog
@@ -426,7 +433,7 @@ class Background {
       }
 
       // try to start osdlyrics process on start
-      if (this.store.get('settings.enableOsdlyricsSupport')) {
+      if (isLinux && this.store.get('settings.enableOsdlyricsSupport')) {
         await createDbus(this.window);
         log('try to start osdlyrics process');
         const osdlyricsProcess = spawn('osdlyrics');

@@ -3,7 +3,7 @@
     <img :src="nextTrackCover" style="display: none" loading="lazy" />
     <img
       class="cover"
-      :src="track.album && track.album.picUrl | resizeImage(512)"
+      :src="currentTrackCover"
       loading="lazy"
       @click="goToAlbum"
     />
@@ -41,6 +41,14 @@ import { mapState } from 'vuex';
 import * as Vibrant from 'node-vibrant/dist/vibrant.worker.min.js';
 import Color from 'color';
 
+const defaultCover =
+  'https://p2.music.126.net/0-Ybpa8FrDfRgKYCTJD8Xg==/109951164796696795.jpg';
+
+function resizeCover(url, size = 512) {
+  if (!url) return `${defaultCover}?param=${size}y${size}`;
+  return `${url.replace('http://', 'https://')}?param=${size}y${size}`;
+}
+
 export default {
   name: 'FMCard',
   components: { ButtonIcon, ArtistsInLine },
@@ -60,11 +68,11 @@ export default {
     artists() {
       return this.track.artists || this.track.ar || [];
     },
+    currentTrackCover() {
+      return resizeCover(this.track?.album?.picUrl);
+    },
     nextTrackCover() {
-      return `${this.player._personalFMNextTrack?.album?.picUrl.replace(
-        'http://',
-        'https://'
-      )}?param=512y512`;
+      return resizeCover(this.player._personalFMNextTrack?.album?.picUrl);
     },
   },
   watch: {
@@ -84,7 +92,7 @@ export default {
       this.player.playNextFMTrack();
     },
     goToAlbum() {
-      if (this.track.album.id === 0) return;
+      if (!this.track.album || this.track.album.id === 0) return;
       this.$router.push({ path: '/album/' + this.track.album.id });
     },
     moveToFMTrash() {
@@ -92,10 +100,7 @@ export default {
     },
     getColor() {
       if (!this.player.personalFMTrack?.album?.picUrl) return;
-      const cover = `${this.player.personalFMTrack.album.picUrl.replace(
-        'http://',
-        'https://'
-      )}?param=512y512`;
+      const cover = resizeCover(this.player.personalFMTrack.album.picUrl);
       Vibrant.from(cover, { colorCount: 1 })
         .getPalette()
         .then(palette => {

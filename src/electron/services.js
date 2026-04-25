@@ -7,8 +7,14 @@ export async function startNeteaseMusicApi() {
   console.log(`${clc.redBright('[NetEase API]')} initiating NCM API`);
 
   // Load the NCM API.
-  await server.serveNcmApi({
-    port: 10754,
-    moduleDefs: require('../ncmModDef'),
-  });
+  try {
+    await server.serveNcmApi({
+      port: 10754,
+      moduleDefs: require('../ncmModDef'),
+    });
+    console.log(`${clc.redBright('[NetEase API]')} listening on 127.0.0.1:10754`);
+  } catch (error) {
+    console.error(`${clc.redBright('[NetEase API]')} failed to start`, error);
+    throw error;
+  }
 }

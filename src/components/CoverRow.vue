@@ -111,7 +111,10 @@ export default {
         }
       }
       let img = item.img1v1Url || item.picUrl || item.coverImgUrl;
-      return `${img?.replace('http://', 'https://')}?param=512y512`;
+      if (!img) {
+        return 'img/logos/yesplaymusic.png';
+      }
+      return `${img.replace('http://', 'https://')}?param=512y512`;
     },
   },
 };

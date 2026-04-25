@@ -6,6 +6,9 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    env:
+      NODE_OPTIONS: --openssl-legacy-provider
+      YARN_IGNORE_ENGINES: true
 
     steps:
       - name: Checkout code
@@ -24,9 +27,6 @@ jobs:
           node-version: 20
           cache: 'yarn'
 
-      - name: Ignore Yarn engine checks
-        run: yarn config set ignore-engines true
-
       - name: Fix package.json dependencies
         run: |
           node -e "let p=require('./package.json'); ['electron', 'electron-builder'].forEach(k=>{if(p.dependencies && p.dependencies[k]){p.devDependencies=p.devDependencies||{}; p.devDependencies[k]=p.dependencies[k]; delete p.dependencies[k]}}); require('fs').writeFileSync('./package.json', JSON.stringify(p, null, 2))"
@@ -34,23 +34,18 @@ jobs:
       - name: Install dependencies
         # 这里是核心：强制指向 Electron 的 ARM64 库文件
         run: yarn install --ignore-engines
-        env:
-          npm_config_arch: arm64
-          npm_config_target_arch: arm64
-          npm_config_target: 13.6.9
-          npm_config_disturl: https://electronjs.org/headers
-          npm_config_runtime: electron
-          npm_config_msvs_version: 2022
+      - name: Install Windows ARM64 native dependency
+        run: yarn add --ignore-engines --ignore-platform --ignore-optional @unblockneteasemusic/rust-napi-win32-arm64-msvc@0.4.0
 
       - name: Create .env file
         run: |
           if (Test-Path .env.example) { copy .env.example .env }
 
       - name: Build Web Code
-        run: yarn run build
+        run: yarn --ignore-engines run build
 
       - name: Build Windows ARM64
-        run: yarn run electron:build --win --arm64
+        run: yarn --ignore-engines run electron:build --win --arm64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           npm_config_arch: arm64
