@@ -119,13 +119,14 @@ module.exports = {
           target: [
             {
               target: 'portable',
-              arch: ['x64'],
+              arch: ['arm64'],
             },
             {
               target: 'nsis',
-              arch: ['x64'],
+              arch: ['arm64'],
             },
           ],
+          artifactName: '${productName}-${version}-win-${arch}.${ext}',
           publisherName: 'YesPlayMusic',
           icon: 'build/icons/icon.ico',
           publish: ['github'],
